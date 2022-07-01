@@ -1,4 +1,10 @@
-import { ComponentFixture, TestBed } from "@angular/core/testing";
+import {
+  ComponentFixture,
+  fakeAsync,
+  flush,
+  TestBed,
+  waitForAsync,
+} from "@angular/core/testing";
 import { DebugElement } from "@angular/core";
 
 import { HomeComponent } from "./home.component";
@@ -7,6 +13,9 @@ import { HttpClientModule } from "@angular/common/http";
 import { setupCourses } from "../common/setup-test-data";
 import { of } from "rxjs";
 import { By } from "@angular/platform-browser";
+import { CoursesModule } from "../courses.module";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { click } from "../common/test-utils";
 
 describe("HomeComponent", () => {
   let fixture: ComponentFixture<HomeComponent>;
@@ -24,9 +33,7 @@ describe("HomeComponent", () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [HomeComponent],
-      providers: [CoursesService],
-      imports: [HttpClientModule],
+      imports: [CoursesModule, HttpClientModule, NoopAnimationsModule],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HomeComponent);
@@ -44,7 +51,7 @@ describe("HomeComponent", () => {
 
     fixture.detectChanges();
 
-    const tabs = de.queryAll(By.css("mat-tab"));
+    const tabs = de.queryAll(By.css(".mat-tab-label"));
 
     expect(tabs.length).toBe(1);
   });
@@ -54,7 +61,7 @@ describe("HomeComponent", () => {
 
     fixture.detectChanges();
 
-    const tabs = de.queryAll(By.css("mat-tab"));
+    const tabs = de.queryAll(By.css(".mat-tab-label"));
 
     expect(tabs.length).toBe(1);
   });
@@ -64,12 +71,52 @@ describe("HomeComponent", () => {
 
     fixture.detectChanges();
 
-    const tabs = de.queryAll(By.css("mat-tab"));
+    const tabs = de.queryAll(By.css(".mat-tab-label"));
 
     expect(tabs.length).toBe(2);
   });
 
-  it("should display advanced courses when tab clicked", () => {
-    pending();
-  });
+  it("should display advanced courses when tab clicked - fakeAsync", fakeAsync(() => {
+    spyOn(service, "findAllCourses").and.returnValue(of(setupCourses()));
+
+    fixture.detectChanges();
+
+    const tabs = de.queryAll(By.css(".mat-tab-label"));
+
+    click(tabs[1]);
+
+    fixture.detectChanges();
+
+    flush();
+
+    let cardTitles = de.queryAll(
+      By.css(".mat-tab-body-active .mat-card-title")
+    );
+
+    expect(cardTitles[0].nativeElement.textContent).toContain(
+      "Angular Security Course"
+    );
+  }));
+
+  it("should display advanced courses when tab clicked - waitForAsync", waitForAsync(() => {
+    spyOn(service, "findAllCourses").and.returnValue(of(setupCourses()));
+
+    fixture.detectChanges();
+
+    const tabs = de.queryAll(By.css(".mat-tab-label"));
+
+    click(tabs[1]);
+
+    fixture.detectChanges();
+
+    fixture.whenStable().then(() => {
+      let cardTitles = de.queryAll(
+        By.css(".mat-tab-body-active .mat-card-title")
+      );
+
+      expect(cardTitles[0].nativeElement.textContent).toContain(
+        "Angular Security Course"
+      );
+    });
+  }));
 });
